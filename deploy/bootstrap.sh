@@ -5,7 +5,7 @@ set -Eeuo pipefail
 umask 077
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-for command_name in docker openssl curl ss; do
+for command_name in docker openssl curl ss ip; do
   command -v "$command_name" >/dev/null || {
     echo "Missing required command: $command_name" >&2
     exit 2
