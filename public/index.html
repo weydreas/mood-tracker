@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f8f7">
+  <meta name="description" content="Mood Atlas — бесплатный и приватный дневник настроения для самонаблюдения.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+  <title>Mood Atlas — дневник настроения</title>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Mood Atlas — главная">
+      <span class="brand-symbol" aria-hidden="true"><span></span></span>
+      <span>Mood<span class="brand-accent">Atlas</span></span>
+    </a>
+    <span class="site-tagline">Пространство для наблюдения за собой</span>
+    <div class="header-account" id="header-account" hidden>
+      <span id="username-display"></span>
+      <button type="button" id="logout-button" class="link-button">Выйти</button>
+    </div>
+  </header>
+  <main id="auth-view" class="auth-layout" hidden>
+    <section class="auth-intro">
+      <div class="eyebrow">Ваш личный дневник</div>
+      <h1>Замечать изменения — первый шаг к пониманию себя.</h1>
+      <p>Отмечайте настроение, сон, тревогу и важные события. В удобное время смотрите динамику и делитесь записями с врачом только по собственному решению.</p>
+      <div class="auth-benefits">
+        <span><span class="benefit-icon">✓</span> Без оплаты и рекламы</span>
+        <span><span class="benefit-icon">✓</span> На телефоне и компьютере</span>
+        <span><span class="benefit-icon">✓</span> Данные под вашим контролем</span>
+      </div>
+      <div class="intro-art" aria-hidden="true">
+        <div class="intro-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="intro-caption">Не каждый день одинаков. И это нормально.</div>
+      </div>
+    </section>
+    <section class="auth-card panel" aria-labelledby="auth-heading">
+      <div class="auth-switch" aria-label="Выбор действия">
+        <button type="button" data-auth="login" class="active">Войти</button>
+        <button type="button" data-auth="register">Создать аккаунт</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <h2 id="auth-heading">С возвращением</h2>
+        <p class="muted">Продолжите вести свой дневник.</p>
+        <label for="login-name">Псевдоним</label>
+        <input id="login-name" autocomplete="username" required minlength="3" maxlength="32">
+        <label for="login-password">Пароль</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="btn primary full">Войти в дневник</button>
+        <button type="button" id="show-recover" class="link-button small-link">Есть код восстановления?</button>
+      </form>
+      <form id="register-form" class="auth-form" hidden>
+        <h2>Начните наблюдение</h2>
+        <p class="muted">Вместо email используйте псевдоним. Он не должен содержать ваше настоящее имя.</p>
+        <label for="register-name">Псевдоним</label>
+        <input id="register-name" autocomplete="username" minlength="3" maxlength="32" required>
+        <label for="register-password">Пароль (не менее 12 символов)</label>
+        <input id="register-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+        <label class="check-row"><input type="checkbox" id="register-adult" required><span>Мне исполнилось 18 лет.</span></label>
+        <label class="check-row"><input type="checkbox" id="register-consent" required><span>Я даю явное согласие на обработку моих сведений о самочувствии согласно <a href="/privacy" target="_blank" rel="noopener noreferrer">условиям приватности</a>.</span></label>
+        <button type="submit" class="btn primary full">Создать аккаунт</button>
+        <p class="fine-print">После регистрации получите секретный код восстановления. Сохраните его отдельно: он показывается один раз.</p>
+      </form>
+      <form id="recover-form" class="auth-form" hidden>
+        <h2>Восстановление доступа</h2>
+        <p class="muted">Используйте код, который вы сохранили при регистрации. Старый код будет заменён новым.</p>
+        <label for="recover-name">Псевдоним</label>
+        <input id="recover-name" autocomplete="username" required>
+        <label for="recover-code">Код восстановления</label>
+        <input id="recover-code" autocomplete="off" required>
+        <label for="recover-password">Новый пароль</label>
+        <input id="recover-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+        <button class="btn primary full" type="submit">Восстановить доступ</button>
+        <button class="link-button small-link" type="button" id="back-login">Вернуться ко входу</button>
+      </form>
+    </section>
+  </main>
+
+  <main id="app-view" class="app-container" hidden>
+    <div class="app-heading">
+      <div>
+        <div class="eyebrow">Личный дневник</div>
+        <h1>Ваше настроение <span class="heading-dot">.</span></h1>
+        <p class="muted">Наблюдайте без оценок. Важна динамика, а не отдельный день.</p>
+      </div>
+      <div class="date-badge"><span id="today-label"></span></div>
+    </div>
+    <nav class="tabs" aria-label="Разделы дневника">
+      <button class="active" type="button" data-tab="today" aria-current="page">Новая запись</button>
+      <button type="button" data-tab="history">История</button>
+      <button type="button" data-tab="insights">Аналитика</button>
+      <button type="button" data-tab="settings">Настройки</button>
+    </nav>
+    <section id="view-today" class="tab-view">
+      <div class="dashboard-layout">
+        <div class="panel entry-panel">
+          <div class="panel-heading">
+            <div><div class="eyebrow">Ежедневное наблюдение</div><h2 id="entry-title">Как вы себя чувствуете?</h2></div>
+            <span class="soft-badge">1–2 минуты</span>
+          </div>
+          <form id="entry-form">
+            <label for="entry-time">Когда?</label>
+            <input type="datetime-local" id="entry-time" required>
+            <div class="field-heading"><label id="mood-label">Общее настроение</label><span class="muted tiny">Выберите состояние</span></div>
+            <div class="mood-options" role="group" aria-labelledby="mood-label">
+              <button type="button" class="mood-choice" data-mood="1"><span class="mood-face">︵</span><span>Очень тяжело</span></button>
+              <button type="button" class="mood-choice" data-mood="2"><span class="mood-face">⌢</span><span>Снижено</span></button>
+              <button type="button" class="mood-choice" data-mood="3"><span class="mood-face">━</span><span>Ровно</span></button>
+              <button type="button" class="mood-choice" data-mood="4"><span class="mood-face">⌣</span><span>Хорошо</span></button>
+              <button type="button" class="mood-choice" data-mood="5"><span class="mood-face">◡</span><span>Очень хорошо</span></button>
+            </div>
+            <p class="hint">Хорошее настроение не равно повышенному возбуждению: это отдельная шкала ниже.</p>
+            <div class="section-divider"></div>
+            <div class="field-heading"><h3>Ощущения и симптомы</h3><span class="muted tiny">0 — нет, 4 — сильно</span></div>
+            <div class="sliders">
+              <label class="slider-row" for="score-anxiety"><span>Тревога <output id="out-anxiety">0</output></span><input type="range" id="score-anxiety" min="0" max="4" step="1" value="0"></label>
+              <label class="slider-row" for="score-lowMood"><span>Подавленность <output id="out-lowMood">0</output></span><input type="range" id="score-lowMood" min="0" max="4" step="1" value="0"></label>
+              <label class="slider-row" for="score-elevated"><span>Возбуждение / подъём <output id="out-elevated">0</output></span><input type="range" id="score-elevated" min="0" max="4" step="1" value="0"></label>
+              <label class="slider-row" for="score-irritability"><span>Раздражительность <output id="out-irritability">0</output></span><input type="range" id="score-irritability" min="0" max="4" step="1" value="0"></label>
+              <label class="slider-row" for="score-energy"><span>Энергия <output id="out-energy">2</output></span><input type="range" id="score-energy" min="0" max="4" step="1" value="2"></label>
+            </div>
+            <div class="section-divider"></div>
+            <h3>Что могло повлиять?</h3>
+            <p class="muted tiny">Можно выбрать несколько факторов или добавить свой.</p>
+            <div id="tag-options" class="tag-options" role="group" aria-label="Факторы"></div>
+            <div class="custom-tag"><input type="text" id="custom-tag" maxlength="32" placeholder="Свой фактор, например «экзамен»"><button type="button" id="add-tag" class="btn secondary">Добавить</button></div>
+            <div class="two-fields">
+              <div><label for="sleep-hours">Сон прошлой ночью, ч</label><input type="number" id="sleep-hours" min="0" max="18" step="0.1" placeholder="Например, 7.5" inputmode="decimal"></div>
+              <div><label for="medication">Приём назначенных лекарств</label><select id="medication"><option value="na">Не отслеживаю</option><option value="taken">По плану</option><option value="missed">Пропуск / изменение</option></select></div>
+            </div>
+            <label for="medication-note">Пометка о лекарствах (необязательно)</label>
+            <input id="medication-note" maxlength="300" placeholder="Например, изменение режима">
+            <label for="note">Что происходило?</label>
+            <textarea id="note" rows="4" maxlength="2000" placeholder="Какие события, мысли или ощущения стоит запомнить?"></textarea>
+            <div class="entry-actions">
+              <button id="save-entry" class="btn primary" type="submit">Сохранить запись</button>
+              <button id="cancel-edit" class="btn secondary" type="button" hidden>Отменить</button>
+              <span class="muted tiny">Запись видна только вам</span>
+            </div>
+          </form>
+        </div>
+        <aside class="dashboard-side">
+          <div class="panel side-panel">
+            <div class="eyebrow">Последние 7 дней</div>
+            <h2>Общая картина</h2>
+            <div id="summary-stats" class="summary-stats"></div>
+            <div id="mini-chart"></div>
+            <p class="hint">График показывает ваши оценки, а не медицинское заключение.</p>
+          </div>
+          <div class="panel note-panel">
+            <div class="note-decor" aria-hidden="true">✳</div>
+            <h3>Можно отмечать состояние несколько раз в день</h3>
+            <p>Утро, день и вечер иногда отличаются сильнее, чем соседние дни. Необязательно записывать всё сразу.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+    <section id="view-history" class="tab-view" hidden>
+      <div class="panel large-panel">
+        <div class="panel-heading">
+          <div><div class="eyebrow">Хронология</div><h2>История наблюдений</h2></div>
+          <label class="month-filter">Месяц <input type="month" id="month-filter"></label>
+        </div>
+        <h3>Календарь последних 28 дней</h3>
+        <div id="mood-calendar" class="mood-calendar"></div>
+        <div class="calendar-key"><span>Тяжелее</span><i class="level-1"></i><i class="level-2"></i><i class="level-3"></i><i class="level-4"></i><i class="level-5"></i><span>Лучше</span></div>
+        <div class="section-divider"></div>
+        <div id="history-list" class="history-list"></div>
+        <button class="btn secondary" type="button" id="load-more" hidden>Показать ещё</button>
+      </div>
+    </section>
+    <section id="view-insights" class="tab-view" hidden>
+      <div class="panel large-panel">
+        <div class="panel-heading">
+          <div><div class="eyebrow">Динамика во времени</div><h2>Что менялось?</h2></div>
+          <div class="range-selector" role="group" aria-label="Период анализа"><button type="button" data-days="7">7 дней</button><button type="button" data-days="30" class="active">30 дней</button><button type="button" data-days="90">90 дней</button></div>
+        </div>
+        <div id="insight-numbers" class="insight-numbers"></div>
+        <div id="insight-chart" class="large-chart"></div>
+        <div class="insights-grid">
+          <div class="insight-box"><h3>Заметные факторы</h3><div id="factor-insights"></div></div>
+          <div class="insight-box"><h3>Сон и настроение</h3><div id="sleep-insights"></div></div>
+        </div>
+        <p class="hint insight-disclaimer">Сравнения описательные. Они не доказывают, что фактор вызвал изменение настроения; учитывайте лечение и другие обстоятельства.</p>
+      </div>
+    </section>
+    <section id="view-settings" class="tab-view" hidden>
+      <div class="settings-grid">
+        <section class="panel large-panel">
+          <div class="eyebrow">Мои данные</div><h2>Экспорт дневника</h2>
+          <p class="muted">Вы можете сохранить все записи за любой период и показать их специалисту. Никому ничего не отправляется автоматически.</p>
+          <div class="button-row">
+            <button class="btn secondary" type="button" data-export="csv">Скачать CSV</button>
+            <button class="btn secondary" type="button" data-export="json">Скачать JSON</button>
+            <button class="btn secondary" type="button" id="print-summary">Печать / PDF</button>
+          </div>
+          <div class="section-divider"></div>
+          <h3>Внешний вид</h3>
+          <label for="theme-select">Тема оформления</label>
+          <select id="theme-select" class="theme-select"><option value="auto">Как на устройстве</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
+          <div class="section-divider"></div>
+          <h3>Приватность и безопасность</h3>
+          <p class="muted">Ваши записи шифруются на сервере, но это не сквозное шифрование. <a href="/privacy" target="_blank" rel="noopener noreferrer">Условия приватности</a>.</p>
+          <form id="delete-account-form" class="delete-form">
+            <label for="delete-password">Чтобы навсегда удалить аккаунт и текущие записи, введите пароль</label>
+            <input type="password" id="delete-password" autocomplete="current-password" required placeholder="Ваш пароль">
+            <button class="btn danger" type="submit">Удалить мой аккаунт</button>
+          </form>
+        </section>
+        <aside class="panel side-panel">
+          <div class="eyebrow">Важно знать</div><h2>Этот дневник — не диагноз</h2>
+          <p>Самонаблюдение полезно для обсуждения симптомов с психиатром или психотерапевтом. Сервис не отслеживает угрозы в реальном времени и не вызывает помощь.</p>
+          <p>Если есть непосредственная опасность причинить вред себе или другим, обратитесь в местную экстренную службу. В ЕС — <strong>112</strong>.</p>
+          <p class="muted tiny">Не прекращайте и не меняйте назначения только на основании графиков.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">Mood Atlas <span>·</span> Бесплатный дневник самонаблюдения <span>·</span> Не заменяет медицинскую помощь</footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="recovery-dialog" class="recovery-dialog">
+    <div class="dialog-symbol">✳</div>
+    <h2>Сохраните секретный код</h2>
+    <p>Он нужен для восстановления доступа без email. Мы не сможем показать его ещё раз. Храните код вне этого устройства.</p>
+    <label for="recovery-code-display">Ваш код восстановления</label>
+    <textarea id="recovery-code-display" rows="2" readonly></textarea>
+    <div class="button-row"><button type="button" class="btn secondary" id="copy-recovery">Скопировать</button><button type="button" class="btn primary" id="close-recovery">Я сохранил код</button></div>
+  </dialog>
+</body>
+</html>
