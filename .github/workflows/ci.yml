@@ -15,10 +15,10 @@ jobs:
       - run: node --check src/server.js
       - run: node --check public/app.js
       - run: npm test
-      - run: bash -n deploy/bootstrap.sh deploy/publish-samehost-nginx.sh
+      - run: bash -n deploy/bootstrap.sh
       - name: Read-only public DNS snapshot
         run: |
-          for name in biodata.health app.biodata.health mood.biodata.health; do
+          for name in kailas.biodata.health mood.biodata.health; do
             echo "DNS A $name:"
             if getent ahostsv4 "$name" > /tmp/mood-dns-out; then
               awk '{print $1}' /tmp/mood-dns-out | sort -u
@@ -36,7 +36,7 @@ jobs:
           DATA_CONTROLLER=Test Operator
           PRIVACY_CONTACT=test@example.org
           MOOD_BIND_IP=127.0.0.1
-          TRUST_PROXY=1
+          TRUST_PROXY=0
           EOF
           chmod 600 .env
           docker compose config --quiet

@@ -1,192 +1,219 @@
-# Mood Tracker: operational publication runbook
+# Mood Atlas — publication using the verified Kailash Weather ingress pattern
 
-Target URL: **https://mood.biodata.health**  
-Code directory: **/opt/mood-tracker**  
-Public browser port: **443/TCP, via the authorised HTTPS gateway**  
-App port inside Docker: **3000/TCP**  
-Host-side port: **3001/TCP** (loopback only by default)  
-Persistent data: Docker volume **mood-tracker_mood-data**.
+**Target:** `https://mood.biodata.health`  
+**Source:** `weydreas/mood-tracker`, reviewed `main`  
+**VDS code directory:** `/opt/mood-tracker` on `srv-prod`  
+**Backend:** `http://192.168.31.20:3001` (Docker internal TCP/3000)  
+**Public DNS:** REG.RU, `mood A 62.152.38.223`  
+**Public ingress:** `62.152.38.223:443`  
+**Shared reverse proxy:** `192.168.31.23` (configure a **new** host rule)  
+**Persistence:** Docker volume `mood-tracker_mood-data`.
 
-**Status:** application deployment materials are prepared. DNS, gateway/TLS
-configuration and VDS runtime deployment are NOT performed by this repository.
-Do not put real patient information into the service until privacy, backups,
-data location, access controls and independent security checks are approved.
+## Authority, evidence, and boundaries
 
-## Source of this pattern
+Based on the **CURRENT_OPERATIONAL_KNOWLEDGE / USER_VERIFIED_LIVE** record:
+[biodata-kb-public-web-service-reverse-proxy-kailash-pattern-20261110-r2.md](https://drive.google.com/file/d/19VsfWgYUojuxdG5pXkskv487P1rYaHqg/view).
+The record reports that public `https://kailas.biodata.health/` was confirmed live
+by the owner and support: `kailas A 62.152.38.223` -> private reverse proxy
+`192.168.31.23` -> `192.168.31.20:8787`.
 
-The previous Kailash Weather project used a separate directory and service on
-the existing VDS. Its public DNS/HTTPS publishing was NOT verified as live.
-We deliberately do NOT reuse its port, alter existing network interfaces,
-or infer that a private IPv4 address is a public DNS destination.
+That is stronger operational evidence than Kailash Weather's older repository
+README, which described only VPN access. It does **not** independently confirm
+the reverse proxy software, access policy, NAT, or current state of all routes.
+Reconfirm DNS, ingress and TLS before new publication.
 
-## 1. Read-only VDS preflight
+**This is a publication contract, not proof of completed VDS/DNS/proxy work.**
+An engineer must create the additional host/SNI rule on the **existing**
+`192.168.31.23` reverse proxy. Do NOT run
+`deploy/publish-samehost-nginx.sh` on `192.168.31.20`: that historical
+same-host installer targets a different topology. Do NOT install a new proxy,
+change Kailash, or expose TCP/3001 through public NAT.
 
-Run on the actual target host:
+Mood journals contain sensitive mental-health records. The application is an
+MVP, **not authorised to hold real patient data** before approved privacy
+notice, controller identity, infrastructure/data-residency review, backups and
+independent security review. Use synthetic test accounts for acceptance.
 
-    hostname
-    ip -br -4 addr
-    sudo ss -ltnp | grep -E ':(80|443|3001|8787)[[:space:]]' || true
-    docker --version
-    docker compose version
-    df -h /opt /var/lib/docker
-    sudo ufw status
+## Target route
 
-Check that existing services and the ingress owner are known. If port 3001 is
-already owned by another application, stop; do not terminate or reconfigure it.
-Do not assume this host owns the public 80/443 ports or the public-facing IP.
+```text
+User browser (HTTPS)
+    |
+    | DNS: mood.biodata.health A 62.152.38.223
+    v
+62.152.38.223:443       public edge / ingress
+    |
+    v
+192.168.31.23           existing shared HTTPS reverse proxy
+    |                   new SNI/Host rule mood.biodata.health
+    |                   TLS certificate for mood.biodata.health
+    v
+192.168.31.20:3001      Mood Tracker backend on srv-prod
+    |
+    v
+Docker container :3000  encrypted SQLite journal volume
+```
 
-## 2. Allocate code directory and synchronise
+Kailash remains `192.168.31.20:8787`; no port/address changes there.
 
-Use an operator account with appropriate permissions. Example:
+## 1. VDS preflight (read-only)
 
-    sudo install -d -m 0750 -o "$USER" -g "$(id -gn)" /opt/mood-tracker
-    git clone https://github.com/weydreas/mood-tracker.git /opt/mood-tracker
-    cd /opt/mood-tracker
+On `srv-prod`:
 
-If the directory already exists from a prior checkout, confirm it is the
-expected repository and use git pull --ff-only; don't overwrite user files.
-Deploy a reviewed tagged or exact-SHA release rather than an unreviewed branch.
+```bash
+hostname
+ip -br -4 addr
+sudo ss -ltnp | grep -E ':(3001|8787)[[:space:]]' || true
+docker --version
+docker compose version
+df -h /opt /var/lib/docker
+sudo ufw status
+```
 
-## 3. Bootstrap (does not change Nginx, DNS or firewall)
+Confirm `192.168.31.20` is assigned locally and 3001 is free. Do not stop
+an unrelated process. Check the existing firewall policies. No new IP
+alias, NAT, or change to the Kailash service is required.
 
-    cd /opt/mood-tracker
-    bash deploy/bootstrap.sh
+## 2. Prepare code and start only the Mood service
 
-The script checks for required commands, creates .env only if absent, generates
-a 256-bit random encryption key, checks the host bind IP and TCP/3001 ownership,
-builds and starts Docker Compose, then verifies /api/health locally. It will not
-replace an existing key. The default .env uses:
-- APP_ORIGIN=https://mood.biodata.health
-- DATA_CONTROLLER=ООО «Биодата Груп»
-- PRIVACY_CONTACT=hello@biodata.health
-- MOOD_BIND_IP=127.0.0.1
-- TRUST_PROXY=1
+```bash
+sudo install -d -m 0750 -o "$USER" -g "$(id -gn)" /opt/mood-tracker
+git clone https://github.com/weydreas/mood-tracker.git /opt/mood-tracker
+cd /opt/mood-tracker
+bash deploy/bootstrap.sh
+docker compose ps
+curl --noproxy '*' -fsS http://192.168.31.20:3001/api/health
+```
 
-These contact/operator defaults originate from publicly available Biodata site
-material, not from approval of a new service-specific privacy notice. Confirm
-them before inviting patients. Securely back up the encryption key separately:
-without it, journal contents in backups are irrecoverable.
+The bootstrap creates an encrypted-data key in local `.env` if missing,
+binds host TCP/3001 only on `192.168.31.20`, tests for conflicting
+listeners, builds the container, and checks backend health. It does not
+modify REG.RU, reverse proxy, network/firewall rules, or existing services.
 
-Verify:
+**Operator responsibilities:** confirm the legal identity/contact in
+`.env`; securely back up the encryption key *separately* from encrypted
+journal backups. Never push `.env` to GitHub. The source code directory
+is separate from the persistent Docker volume. If cloning into an existing
+non-empty folder, use an approved fast-forward update instead of blindly
+overwriting it.
 
-    docker compose ps
-    curl --noproxy '*' -fsS http://127.0.0.1:3001/api/health
-    docker compose logs --tail 40 mood-tracker
+### Private ingress access control
 
-## 4. Find the approved PUBLIC HTTPS ingress before editing DNS
+Before any external patient-facing launch, the infrastructure team must
+confirm TCP/3001 is accessible only from the approved reverse proxy
+`192.168.31.23` plus explicitly authorized local diagnostics, and **not**
+through public NAT or unrestricted LAN access. Docker's published ports can
+bypass simple UFW INPUT rules: verify the actual Docker/firewall forwarding
+policy (for example approved DOCKER-USER/edge filtering), and test reachability
+from both the proxy and an unauthorized source. Keep this rule scoped to the
+one service; do not alter a global firewall default.
 
-This is a mandatory read-only discovery; the VDS internal IP does not prove its
-Internet ingress identity. On the DNS / gateway side, identify:
-- which system currently handles public biodata.health HTTPS;
-- the verified inbound public IPv4, or the existing gateway DNS name;
-- whether TLS is Nginx, Caddy, Traefik, a CDN, or a separate load balancer;
-- whether that gateway runs on the same host as /opt/mood-tracker;
-- whether the site's data residency and privacy architecture permits this VDS
-  to store sensitive mood journal records.
+If a local .env already exists from the older loopback-only draft, preserve its
+DATA_ENCRYPTION_KEY, but set MOOD_BIND_IP=192.168.31.20 and TRUST_PROXY=0
+before rerunning the bootstrap. The bootstrap never overwrites .env.
 
-Do NOT copy any historical monitoring IP into the new DNS A record without
-checking current inbound ownership.
+The app defaults to `TRUST_PROXY=0` for the private multi-host route,
+rather than trusting a spoofable `X-Real-IP` from arbitrary clients. This
+conservatively rate-limits the shared proxy IP; high-volume onboarding
+needs an independently reviewed, gateway-bound client-IP policy.
 
-### Variant A — gateway and Docker share a host
+## 3. Request a new host rule on the existing reverse proxy
 
-Keep MOOD_BIND_IP=127.0.0.1; reverse proxy can access the container locally.
-For an **existing Nginx** gateway, the repository includes an explicit,
-gated installer. It uses a temporary HTTP-only ACME challenge vhost (returns
-404 for all non-challenge paths), obtains a Let's Encrypt certificate, and
-only then activates the HTTPS reverse proxy. No passwords or journal data
-are served over HTTP. Run **after confirming the public DNS points at the
-same HTTPS gateway and TCP/80 and TCP/443 reach it**:
+The actual reverse proxy is **`192.168.31.23`**, not `192.168.31.11`
+(an early Kailash diagnostic false lead), and not the Mood backend host.
+Software/interface was **not verified** by the KB. Do not assume Nginx
+Proxy Manager, Nginx, OpenResty, or Caddy.
 
-    cd /opt/mood-tracker
-    sudo env CONFIRM_SAME_HOST_GATEWAY=mood.biodata.health \
-      ACME_EMAIL=hello@biodata.health \
-      bash deploy/publish-samehost-nginx.sh
+Send the infrastructure support team the complete, ready-to-use
+[publication request](SUPPORT_REQUEST.md).
 
-This operation intentionally modifies the existing gateway's Nginx config;
-use only with the infrastructure owner's approval, after read-only preflight.
-It will reject a duplicate mood.biodata.health vhost and never replace an
-unrelated route. The ACME contact is the published company contact and must
-be verified by the operator. Once active:
+They should add a **separate** host/SNI rule while preserving the already
+working Kailash host, with:
 
-    sudo certbot renew --dry-run
-    curl -fsS https://mood.biodata.health/api/health
+| Setting | Exact requested value |
+|---|---|
+| Public hostname | `mood.biodata.health` |
+| Public ingress | `62.152.38.223:443` |
+| Existing reverse proxy | `192.168.31.23` |
+| Private backend | `192.168.31.20` |
+| Backend protocol | `http` |
+| Backend TCP port | `3001` |
+| Backend health | `GET /api/health` -> `{"ok":true}` |
+| TLS certificate | valid for `mood.biodata.health` |
+| Redirect | HTTP/80 to HTTPS, if HTTP is enabled |
+| Allowed backend source | only `192.168.31.23` (plus approved checks) |
+| Public authentication | application registration and session login |
 
-If the approved gateway is Caddy/Traefik/another platform, use its existing
-routing and TLS mechanism instead; do not install a competing Nginx.
+Gateway must preserve the requested `Host`, keep redirects/cookies and
+`Origin` correct, override forwarded client-IP headers rather than pass
+untrusted values, and avoid logging sensitive request bodies. A remote
+HTTPS-only Nginx **location snippet** is available as an example in
+`deploy/nginx.remote-gateway.conf.example` *if* the actual gateway uses
+Nginx; do not install it on the backend host.
 
-### Variant B — gateway on a different host
+## 4. Add the REG.RU DNS record
 
-Default 127.0.0.1:3001 is **unreachable** from a remote gateway. Set
-MOOD_BIND_IP to the VDS's **verified private interface IPv4** in its private
-.env and run bash deploy/bootstrap.sh again. NEVER set it to 0.0.0.0.
-Restrict port 3001 in the existing firewall/NAT so only the gateway's
-**verified private source address** can reach it. Do not weaken existing
-firewall defaults. The proxy should then target:
+In the existing **biodata.health** DNS zone at **REG.RU**:
 
-    http://<verified-private-app-ip>:3001
-
-Adapt deploy/nginx.remote-gateway.conf.example on the gateway (not on the app
-host), or an equivalent route in its real HTTPS gateway stack.
-
-## 5. DNS for mood.biodata.health
-
-In the **existing authoritative DNS zone** for biodata.health:
-
-| Type | Name/Host | Target | TTL |
+| Type | Host/Name | Value | TTL |
 |---|---|---|---|
-| A | mood | VERIFIED PUBLIC HTTPS GATEWAY IPv4 | 300 s |
+| **A** | **mood** | **62.152.38.223** | **300 seconds** |
 
-Alternative only if the existing HTTPS gateway has a stable DNS name AND
-explicitly accepts mood.biodata.health: use CNAME mood to that gateway name
-instead of an A record (never both for the same name).
+Do not create a CNAME to `app.biodata.health`, whose observed IPv4
+`62.152.38.222` belongs to a different route. Do not use private
+`192.168.31.20` or `192.168.31.23` in public A records.
+Do not change NS for the domain, apex DNS, or Kailash DNS.
+Do not add an AAAA until IPv6 ingress is verified.
 
-Do not change domain nameservers, apex records or unrelated subdomains. Do not
-point public A/AAAA records to private RFC1918 addresses. Create an AAAA record
-only when IPv6 routing and TLS are actually configured.
+After saving:
 
-Check the DNS answer from more than one resolver:
+```bash
+dig +short A mood.biodata.health @1.1.1.1
+dig +short A mood.biodata.health @8.8.8.8
+```
 
-    dig +short A mood.biodata.health @1.1.1.1
-    dig +short A mood.biodata.health @8.8.8.8
+Both should show `62.152.38.223` after propagation.
+DNS alone **does not** configure the reverse proxy or TLS.
 
-DNS alone never sets up HTTP reverse-proxy routing; the gateway must route by
-Host/SNI and hold a valid certificate.
+## 5. Acceptance — from *outside* the corporate network
 
-## 6. HTTPS certificate and separate gateways
+First verify backend from an approved private source (or the proxy host):
 
-For Variant A, publish-samehost-nginx.sh provisions ACME HTTP-01 with Certbot
-webroot and activates the TLS vhost. Verify automatic renewal with
-sudo certbot renew --dry-run. In case certificate issuance fails, the staged
-HTTP server serves only ACME challenges and 404, not patient content.
+```bash
+curl --noproxy '*' -fsS --max-time 5 http://192.168.31.20:3001/api/health
+```
 
-For Variant B, configure the **existing gateway owner-approved HTTPS
-terminator** with a valid certificate, host/SNI mood.biodata.health and
-private upstream routing. A TLS-only Nginx location snippet is provided in
-deploy/nginx.remote-gateway.conf.example. Its placeholder must be replaced
-with an approved private backend route; it is not a complete vhost and does
-not by itself create a certificate. Never expose HTTP application traffic
-publicly while awaiting certificates.
+Then from public internet (ideally a phone on mobile data, VPN off):
 
-## 7. Final acceptance
+```bash
+curl --fail --show-error --silent https://mood.biodata.health/api/health
+curl --fail --show-error --silent -o /dev/null -w '%{http_code}\n' https://mood.biodata.health/
+curl --fail --show-error --silent https://mood.biodata.health/api/me
+```
 
-    curl --fail --show-error --silent https://mood.biodata.health/api/health
-    curl --fail --show-error --silent -o /dev/null -w '%{http_code}\n' https://mood.biodata.health/
-    curl --fail --show-error --silent -o /dev/null -w '%{http_code}\n' https://mood.biodata.health/api/me
+Expected: health `{"ok":true}`, homepage HTTP 200, anonymous
+`/api/me` response with `user:null`. Confirm HTTPS certificate hostname
+and expiry. Register a **synthetic** account, add/edit an entry, export,
+log out, log back in, and delete that account on both desktop and mobile.
 
-Expected: health JSON ok=true; homepage 200; unauthenticated /api/me
-responds 200 with user=null. Then register a **synthetic test account**, save,
-edit, export, log out, log in, delete the test account. Repeat on a phone and a
-desktop browser; verify valid HTTPS and no mixed content.
+If public URL times out while private health works: inspect ingress/NAT/
+gateway. If public returns **502**: inspect gateway's connection to
+`192.168.31.20:3001` and firewall/port. A default Nginx/OpenResty page
+means hostname did not match the correct proxy host rule. For certificate
+warnings: inspect SNI, TLS issuance and chain. Do not rebuild the app to
+fix a proxy routing problem.
 
-Backups: protect Docker volume, encrypted backup copies and .env key in
-separate secure locations; perform a restoration drill before real users.
-Only collect real data after applicable privacy and data-location approvals.
+## 6. Rollback and data safety
 
-## Reversal / safe stop
+```bash
+cd /opt/mood-tracker
+docker compose stop mood-tracker
+```
 
-    cd /opt/mood-tracker
-    docker compose stop mood-tracker
+This affects only the Mood service; coordinate DNS/proxy reversal with
+its owner. **Never run `docker compose down -v`**, which deletes the
+persistent database volume. Protect encrypted DB backups and the key in
+separate secure stores; perform a restore drill before real patient data.
 
-This stops only the Mood Tracker service. DO NOT run docker compose down -v:
-it permanently destroys the persistent data volume. Reverting a gateway
-virtual host is a separate controlled operation by its owner.
+**Publication state at authoring:** files and CI reviewed; **VDS deployment,
+REG.RU record, shared-proxy route and public HTTPS acceptance unverified**.
