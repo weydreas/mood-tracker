@@ -21,10 +21,10 @@ NODE_ENV=production
 APP_ORIGIN=https://mood.biodata.health
 DATA_CONTROLLER="ООО «Биодата Груп»"
 PRIVACY_CONTACT=hello@biodata.health
-# Loopback by default. Do NOT use 0.0.0.0.
-MOOD_BIND_IP=127.0.0.1
-# ONLY when the reverse proxy overwrites X-Real-IP and is the sole ingress.
-TRUST_PROXY=1
+# Canonical Kailash-pattern backend is an existing PRIVATE interface, not public ingress.
+MOOD_BIND_IP=192.168.31.20
+# Do not trust potentially spoofable forwarded IP headers from private LAN clients.
+TRUST_PROXY=0
 ENV
   chmod 600 .env
   echo "Created protected .env with a new encryption key."
@@ -36,7 +36,7 @@ else
 fi
 
 bind_ip="$(sed -n 's/^MOOD_BIND_IP=//p' .env | tail -n 1)"
-bind_ip="${bind_ip:-127.0.0.1}"
+bind_ip="${bind_ip:-192.168.31.20}"
 if [[ "$bind_ip" == "0.0.0.0" || "$bind_ip" == "::" || "$bind_ip" == "*" ]]; then
   echo "Refusing wildcard binding. Use loopback or a verified private interface." >&2
   exit 3
@@ -46,7 +46,7 @@ if [[ "$bind_ip" != "127.0.0.1" ]]; then
     echo "Requested MOOD_BIND_IP is not assigned to this host: $bind_ip" >&2
     exit 3
   fi
-  echo "WARNING: private-interface ingress selected. Verify firewall ACL: gateway only." >&2
+  echo "Private interface selected: $bind_ip. Require gateway-only ACL from 192.168.31.23 before public launch." >&2
 fi
 if ss -H -ltn '( sport = :3001 )' | grep -q .; then
   if [[ -z "$(docker compose ps -q mood-tracker)" ]]; then
@@ -70,4 +70,4 @@ if [[ "$ok" != 1 ]]; then
   exit 5
 fi
 echo "Local health OK: http://$bind_ip:3001/api/health"
-echo "DNS/TLS have NOT been changed. See deploy/README.md for the public gateway."
+echo "DNS/TLS/gateway ACL have NOT been changed. Existing shared proxy is 192.168.31.23."
