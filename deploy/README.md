@@ -102,8 +102,15 @@ overwriting it.
 Before any external patient-facing launch, the infrastructure team must
 confirm TCP/3001 is accessible only from the approved reverse proxy
 `192.168.31.23` plus explicitly authorized local diagnostics, and **not**
-through public NAT or unrestricted LAN access. Keep this firewall change
-scoped to the one service; do not alter a global firewall default.
+through public NAT or unrestricted LAN access. Docker's published ports can
+bypass simple UFW INPUT rules: verify the actual Docker/firewall forwarding
+policy (for example approved DOCKER-USER/edge filtering), and test reachability
+from both the proxy and an unauthorized source. Keep this rule scoped to the
+one service; do not alter a global firewall default.
+
+If a local .env already exists from the older loopback-only draft, preserve its
+DATA_ENCRYPTION_KEY, but set MOOD_BIND_IP=192.168.31.20 and TRUST_PROXY=0
+before rerunning the bootstrap. The bootstrap never overwrites .env.
 
 The app defaults to `TRUST_PROXY=0` for the private multi-host route,
 rather than trusting a spoofable `X-Real-IP` from arbitrary clients. This
