@@ -1,3 +1,5 @@
+name: mood-tracker
+
 services:
   mood-tracker:
     build: .
@@ -9,7 +11,7 @@ services:
       PORT: "3000"
       DB_PATH: /data/mood.sqlite
     ports:
-      - "127.0.0.1:3001:3000"
+      - "${MOOD_BIND_IP:-127.0.0.1}:3001:3000"
     volumes:
       - mood-data:/data
     read_only: true
