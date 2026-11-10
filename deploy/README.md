@@ -89,22 +89,30 @@ checking current inbound ownership.
 
 ### Variant A — gateway and Docker share a host
 
-Keep MOOD_BIND_IP=127.0.0.1; the reverse proxy can access port 3001 locally.
-For an **existing Nginx** gateway, prepare a virtual host from
-deploy/nginx.samehost.conf. Before any write run:
+Keep MOOD_BIND_IP=127.0.0.1; reverse proxy can access the container locally.
+For an **existing Nginx** gateway, the repository includes an explicit,
+gated installer. It uses a temporary HTTP-only ACME challenge vhost (returns
+404 for all non-challenge paths), obtains a Let's Encrypt certificate, and
+only then activates the HTTPS reverse proxy. No passwords or journal data
+are served over HTTP. Run **after confirming the public DNS points at the
+same HTTPS gateway and TCP/80 and TCP/443 reach it**:
 
-    sudo nginx -T | grep -F 'server_name mood.biodata.health' || true
-    sudo nginx -t
+    cd /opt/mood-tracker
+    sudo env CONFIRM_SAME_HOST_GATEWAY=mood.biodata.health \
+      ACME_EMAIL=hello@biodata.health \
+      bash deploy/publish-samehost-nginx.sh
 
-Confirm the name is free and that the gateway administrator approves adding a
-new server. A standard Nginx sites-available layout can use:
+This operation intentionally modifies the existing gateway's Nginx config;
+use only with the infrastructure owner's approval, after read-only preflight.
+It will reject a duplicate mood.biodata.health vhost and never replace an
+unrelated route. The ACME contact is the published company contact and must
+be verified by the operator. Once active:
 
-    sudo cp deploy/nginx.samehost.conf /etc/nginx/sites-available/mood.biodata.health
-    sudo ln -s /etc/nginx/sites-available/mood.biodata.health /etc/nginx/sites-enabled/mood.biodata.health
-    sudo nginx -t && sudo systemctl reload nginx
+    sudo certbot renew --dry-run
+    curl -fsS https://mood.biodata.health/api/health
 
-If a live block for the name exists, do not replace it. Other gateway
-implementations need their own equivalent config, not the Nginx file.
+If the approved gateway is Caddy/Traefik/another platform, use its existing
+routing and TLS mechanism instead; do not install a competing Nginx.
 
 ### Variant B — gateway on a different host
 
@@ -144,18 +152,20 @@ Check the DNS answer from more than one resolver:
 DNS alone never sets up HTTP reverse-proxy routing; the gateway must route by
 Host/SNI and hold a valid certificate.
 
-## 6. HTTPS certificate — only after DNS is correct
+## 6. HTTPS certificate and separate gateways
 
-When using existing Nginx and Certbot on the **public gateway**:
+For Variant A, publish-samehost-nginx.sh provisions ACME HTTP-01 with Certbot
+webroot and activates the TLS vhost. Verify automatic renewal with
+sudo certbot renew --dry-run. In case certificate issuance fails, the staged
+HTTP server serves only ACME challenges and 404, not patient content.
 
-    sudo nginx -t
-    sudo certbot --nginx -d mood.biodata.health --redirect
-    sudo nginx -t
-    sudo certbot renew --dry-run
-
-Use the organization's actual ACME registration contact. Certbot requires
-inbound DNS/HTTP reachability for normal HTTP-01 validation. If the existing
-gateway is not Nginx, use its approved TLS mechanism instead.
+For Variant B, configure the **existing gateway owner-approved HTTPS
+terminator** with a valid certificate, host/SNI mood.biodata.health and
+private upstream routing. A TLS-only Nginx location snippet is provided in
+deploy/nginx.remote-gateway.conf.example. Its placeholder must be replaced
+with an approved private backend route; it is not a complete vhost and does
+not by itself create a certificate. Never expose HTTP application traffic
+publicly while awaiting certificates.
 
 ## 7. Final acceptance
 
