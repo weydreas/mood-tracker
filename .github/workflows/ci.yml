@@ -27,3 +27,25 @@ jobs:
             fi
           done
       - run: docker build -t mood-tracker:test .
+      - name: Docker Compose backend smoke
+        run: |
+          cat > .env <<EOF
+          DATA_ENCRYPTION_KEY=$(openssl rand -hex 32)
+          NODE_ENV=production
+          APP_ORIGIN=https://mood.biodata.health
+          DATA_CONTROLLER=Test Operator
+          PRIVACY_CONTACT=test@example.org
+          MOOD_BIND_IP=127.0.0.1
+          TRUST_PROXY=1
+          EOF
+          chmod 600 .env
+          docker compose config --quiet
+          docker compose up --build --detach mood-tracker
+          ready=0
+          for i in $(seq 1 25); do
+            if curl -fsS http://127.0.0.1:3001/api/health | grep -q '\"ok\":true'; then ready=1; break; fi
+            sleep 1
+          done
+          docker compose logs --tail 25 mood-tracker
+          docker compose down
+          test "$ready" -eq 1
