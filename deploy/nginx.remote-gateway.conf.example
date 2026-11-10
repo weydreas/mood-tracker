@@ -1,0 +1,21 @@
+# TEMPLATE ONLY for a separate, authorised HTTPS gateway.
+# Replace the private IP with a verified private route; never publish :3001
+# over public NAT or bind 0.0.0.0. Restrict TCP/3001 to gateway's IP at firewall.
+server {
+    listen 80;
+    server_name mood.biodata.health;
+
+    access_log off;
+    location / {
+        proxy_pass http://REPLACE_WITH_VERIFIED_PRIVATE_IPV4:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+        client_max_body_size 32k;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 35s;
+    }
+}
