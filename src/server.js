@@ -368,13 +368,16 @@ async function route(req, res) {
     return res.end(page);
   }
   const files = { '/':'index.html', '/index.html':'index.html', '/app.js':'app.js',
-    '/styles.css':'styles.css', '/favicon.svg':'favicon.svg' };
+    '/styles.css':'styles.css', '/favicon.svg':'favicon.svg',
+    '/manifest.webmanifest':'manifest.webmanifest',
+    '/icons/icon-192.png':'icons/icon-192.png', '/icons/icon-512.png':'icons/icon-512.png' };
   if (!files[pathname]) throw new HttpError(404, 'Страница не найдена.');
   const file = join(ROOT, 'public', files[pathname]);
   const content = await readFile(file);
   const type = pathname.endsWith('.js') ? 'text/javascript' : pathname.endsWith('.css') ? 'text/css' :
-    pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/html';
-  res.writeHead(200, { 'Content-Type': type + '; charset=utf-8' });
+    pathname.endsWith('.svg') ? 'image/svg+xml' : pathname.endsWith('.png') ? 'image/png' :
+    pathname.endsWith('.webmanifest') ? 'application/manifest+json' : 'text/html';
+  res.writeHead(200, { 'Content-Type': type + (type === 'image/png' ? '' : '; charset=utf-8') });
   res.end(content);
 }
 const server = createServer((req, res) => {
