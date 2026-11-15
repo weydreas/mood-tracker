@@ -19,5 +19,11 @@ test('UI elements are present and asset loading is local',()=>{
  assert.match(js,/localStorage\.getItem\('mood-theme'\) \|\| 'light'/);
  assert.match(js,/theme-toggle'\)\.addEventListener\('click'/);
  assert.match(html,/<footer[^>]*class="footer"[^>]*>[\s\S]*Сервис разработан и поддерживается компанией Biodata[\s\S]*<\/footer>/);
- assert.match(html,/<a href="https:\/\/biodata\.health" target="_blank" rel="noopener noreferrer">Сервис разработан и поддерживается компанией Biodata<\/a>/);
+ assert.match(html,/<span class="footer-note">Не заменяет медицинскую помощь<\/span>/);
+ assert.match(html,/<a class="footer-credit" href="https:\/\/biodata\.health"/);
+ assert.match(html,/<a class="footer-credit" href="https:\/\/biodata\.health" target="_blank" rel="noopener noreferrer">Сервис разработан и поддерживается компанией Biodata<\/a>/);
+ const css=readFileSync(new URL("../public/styles.css",import.meta.url),"utf8");
+ assert.match(css,/@media\(max-width:760px\)[^\n]*safe-area-inset-top/);
+ assert.match(css,/\.header-actions\{width:100%;margin-left:0;justify-content:space-between/);
+ assert.match(css,/\.footer \.footer-note,\.footer \.footer-credit\{display:block/);
 });
