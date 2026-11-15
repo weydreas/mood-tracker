@@ -30,6 +30,9 @@ test('UI elements are present and asset loading is local',()=>{
  assert.match(html,/<span class="footer-note">Не заменяет медицинскую помощь<\/span>/);
  assert.match(html,/<a class="footer-credit" href="https:\/\/biodata\.health"/);
  assert.match(html,/<a class="footer-credit" href="https:\/\/biodata\.health" target="_blank" rel="noopener noreferrer">Сервис разработан и поддерживается компанией Biodata<\/a>/);
+ const server=readFileSync(new URL("../src/server.js",import.meta.url),"utf8");
+ assert.doesNotMatch(server,/До обработки реальных данных оператор должен дополнить эту информацию/);
+ assert.match(server,/Основание обработки чувствительных данных/);
  const css=readFileSync(new URL("../public/styles.css",import.meta.url),"utf8");
  assert.match(css,/@media\(max-width:760px\)[^\n]*safe-area-inset-top/);
  assert.match(css,/\.header-actions\{width:auto;margin-left:auto;justify-content:flex-end/);
