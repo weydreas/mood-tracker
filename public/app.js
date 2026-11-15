@@ -381,7 +381,13 @@ function applyTheme(choice) {
   const dark = choice === 'dark' || (choice === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.body.dataset.theme = dark ? 'dark':'light';
   $('theme-select').value = choice;
-  localStorage.setItem('mood-theme',choice);
+  const toggle = $('theme-toggle');
+  toggle.setAttribute('aria-pressed', String(dark));
+  const label = dark ? 'Включить светлую тему' : 'Включить тёмную тему';
+  toggle.setAttribute('aria-label',label);
+  toggle.title = label;
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#101c1c' : '#f6f8f7';
+  try { localStorage.setItem('mood-theme',choice); } catch { /* Private browsing may disable storage. */ }
 }
 function bindEvents() {
   document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click',() => switchAuth(b.dataset.auth)));
@@ -464,11 +470,13 @@ function bindEvents() {
   });
   $('print-summary').addEventListener('click',() => { renderInsights(); window.print(); });
   $('theme-select').addEventListener('change',e => applyTheme(e.target.value));
+  $('theme-toggle').addEventListener('click',() => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
 }
 async function init() {
   bindEvents();
-  try { applyTheme(localStorage.getItem('mood-theme') || 'auto'); }
-  catch { applyTheme('auto'); }
+  let savedTheme = 'light';
+  try { savedTheme = localStorage.getItem('mood-theme') || 'light'; } catch { /* Default to light. */ }
+  applyTheme(['light','dark','auto'].includes(savedTheme) ? savedTheme : 'light');
   switchAuth('login');
   try {
     const session = await api('/api/me');

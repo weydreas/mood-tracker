@@ -29,5 +29,5 @@ test('HTML declares manifest, iOS home-screen icon and matching theme color', as
   const html = await readFile(file('public/index.html'), 'utf8');
   assert.match(html, /rel="manifest" href="\/manifest\.webmanifest"/);
   assert.match(html, /rel="apple-touch-icon" href="\/icons\/icon-192\.png"/);
-  assert.match(html, /name="theme-color" content="#0c2421"/);
+  assert.match(html, /name="theme-color" content="#f6f8f7"/);
 });
