@@ -13,4 +13,6 @@ test('UI elements are present and asset loading is local',()=>{
  assert.doesNotMatch(html,/<script[^>]+src="https?:/);
  assert.match(html,/id="register-consent"/);
  assert.match(html,/id="entry-form"/);
+ assert.match(html,/<footer[^>]*class="footer"[^>]*>[\s\S]*Сервис разработан и поддерживается компанией Biodata[\s\S]*<\/footer>/);
+ assert.match(html,/<a href="https:\/\/biodata\.health" target="_blank" rel="noopener noreferrer">Сервис разработан и поддерживается компанией Biodata<\/a>/);
 });
