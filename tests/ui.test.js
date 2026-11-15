@@ -13,6 +13,11 @@ test('UI elements are present and asset loading is local',()=>{
  assert.doesNotMatch(html,/<script[^>]+src="https?:/);
  assert.match(html,/id="register-consent"/);
  assert.match(html,/id="entry-form"/);
+ assert.match(html,/id="theme-toggle"[^>]*aria-label="Включить тёмную тему"[^>]*aria-pressed="false"/);
+ assert.match(html,/class="header-actions"[\s\S]*id="theme-toggle"[\s\S]*id="username-display"/);
+ assert.match(html,/<option value="light">Светлая<\/option>/);
+ assert.match(js,/localStorage\.getItem\('mood-theme'\) \|\| 'light'/);
+ assert.match(js,/theme-toggle'\)\.addEventListener\('click'/);
  assert.match(html,/<footer[^>]*class="footer"[^>]*>[\s\S]*Сервис разработан и поддерживается компанией Biodata[\s\S]*<\/footer>/);
  assert.match(html,/<a href="https:\/\/biodata\.health" target="_blank" rel="noopener noreferrer">Сервис разработан и поддерживается компанией Biodata<\/a>/);
 });
