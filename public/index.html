@@ -28,10 +28,6 @@
         <span class="theme-toggle-icon theme-toggle-sun" aria-hidden="true">☀</span>
         <span class="theme-toggle-knob" aria-hidden="true"></span>
       </button>
-      <div class="header-account" id="header-account" hidden>
-        <span id="username-display"></span>
-        <button type="button" id="logout-button" class="link-button">Выйти</button>
-      </div>
     </div>
   </header>
   <main id="auth-view" class="auth-layout" hidden>
@@ -104,7 +100,7 @@
       <button class="active" type="button" data-tab="today" aria-current="page">Новая запись</button>
       <button type="button" data-tab="history">История</button>
       <button type="button" data-tab="insights">Аналитика</button>
-      <button type="button" data-tab="settings">Настройки</button>
+      <button type="button" data-tab="settings">Аккаунт</button>
     </nav>
     <section id="view-today" class="tab-view">
       <div class="dashboard-layout">
@@ -197,17 +193,27 @@
           <div class="insight-box"><h3>Сон и настроение</h3><div id="sleep-insights"></div></div>
         </div>
         <p class="hint insight-disclaimer">Сравнения описательные. Они не доказывают, что фактор вызвал изменение настроения; учитывайте лечение и другие обстоятельства.</p>
-      </div>
-    </section>
-    <section id="view-settings" class="tab-view" hidden>
-      <div class="settings-grid">
-        <section class="panel large-panel">
-          <div class="eyebrow">Мои данные</div><h2>Экспорт дневника</h2>
+        <div class="section-divider"></div>
+        <section class="insights-export" aria-labelledby="insights-export-title">
+          <div class="eyebrow">Мои данные</div>
+          <h3 id="insights-export-title">Экспорт дневника</h3>
           <p class="muted">Вы можете сохранить все записи за любой период и показать их специалисту. Никому ничего не отправляется автоматически.</p>
           <div class="button-row">
             <button class="btn secondary" type="button" data-export="csv">Скачать CSV</button>
             <button class="btn secondary" type="button" data-export="json">Скачать JSON</button>
             <button class="btn secondary" type="button" id="print-summary">Печать / PDF</button>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section id="view-settings" class="tab-view" hidden>
+      <div class="settings-grid">
+        <section class="panel large-panel">
+          <div class="eyebrow">Ваш профиль</div><h2>Аккаунт</h2>
+          <div class="account-profile">
+            <span class="muted">Псевдоним</span>
+            <strong id="username-display"></strong>
+            <button type="button" id="logout-button" class="btn secondary">Выйти из аккаунта</button>
           </div>
           <div class="section-divider"></div>
           <h3>Внешний вид</h3>

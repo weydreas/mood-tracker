@@ -60,12 +60,10 @@ function showAuth() {
   user = null;
   $('auth-view').hidden = false;
   $('app-view').hidden = true;
-  $('header-account').hidden = true;
 }
 async function enterApp(account) {
   user = account;
   $('username-display').textContent = account.username;
-  $('header-account').hidden = false;
   $('auth-view').hidden = true;
   $('app-view').hidden = false;
   $('today-label').textContent = new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
