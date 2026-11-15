@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const root = new URL('../', import.meta.url);
 const text = (p) => readFileSync(new URL(p, root), 'utf8');
 
-test('production guidance matches current Kailash KB r2 ingress', () => {
+test('production guidance matches verified Mood NPM ingress', () => {
   const runbook = text('deploy/README.md');
   assert.match(runbook, /mood\.biodata\.health/);
   assert.match(runbook, /62\.152\.38\.223/);
