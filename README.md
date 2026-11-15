@@ -10,9 +10,9 @@
 базы знаний Biodata (ревизия r2, 2026-11-10):
 
 ```text
-mood.biodata.health A 62.152.38.223 (REG.RU)
-  → HTTPS ingress 62.152.38.223:443
-  → существующий reverse proxy 192.168.31.23
+mood.biodata.health A 62.152.38.69 (REG.RU)
+  → HTTPS ingress 62.152.38.69:443
+  → Nginx Proxy Manager 192.168.31.11 (панель :81)
   → приватный backend 192.168.31.20:3001 (srv-prod)
 ```
 
@@ -25,9 +25,13 @@ Docker Compose и health-check. Новое правило для hostname, се�
 **[Пошаговая инструкция](deploy/README.md)** и
 **[готовая заявка в поддержку](deploy/SUPPORT_REQUEST.md)**.
 
-Схема публикации в коде ещё не означает реальную публикацию: DNS,
-маршрутизация reverse proxy и установка VDS требуют подтверждённого
-операторского выполнения. Не менять работающий Kailash Weather.
+На 15–16 ноября 2026 DNS, публичный HTTP и backend health подтверждены.
+HTTPS-страница открывается, однако POST авторизации/регистрации отклоняется:
+живой контейнер показал `APP_ORIGIN=http://192.168.31.20:3001` и
+`NODE_ENV=development`, несмотря на production Compose в репозитории.
+Требуется безопасная сверка работающего checkout/Compose и аккуратный
+recreate только Mood Tracker после backup `.env` и сохранения Docker volume.
+Не менять работающий Kailash Weather.
 
 ## Установка на домашний экран (PWA)
 
@@ -55,7 +59,7 @@ Docker Compose и health-check. Новое правило для hostname, се�
 Для `mood.biodata.health` используйте единственную актуальную инструкцию
 `deploy/README.md`. В корпоративной конфигурации Docker слушает на
 `192.168.31.20:3001`, а TLS завершается на отдельном общем reverse proxy
-`192.168.31.23`. Не используйте localhost-only путь как готовый маршрут
+`192.168.31.11`. Не используйте localhost-only путь как готовый маршрут
 для этого отдельного proxy. Не доверяйте `X-Real-IP` от произвольных
 клиентов; проверка ACL и политики IP-заголовков необходима отдельно.
 
