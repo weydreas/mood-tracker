@@ -37,8 +37,9 @@ Do not treat CI merge or a 200 health-check alone as registration acceptance.
 Based on the **CURRENT_OPERATIONAL_KNOWLEDGE / USER_VERIFIED_LIVE** record:
 [biodata-kb-public-web-service-reverse-proxy-kailash-pattern-20261110-r2.md](https://drive.google.com/file/d/19VsfWgYUojuxdG5pXkskv487P1rYaHqg/view).
 The record reports that public `https://kailas.biodata.health/` was confirmed live
-by the owner and support: `kailas A 62.152.38.69` -> private reverse proxy
-`192.168.31.11` -> `192.168.31.20:8787`.
+by the owner and support: `kailas A 62.152.38.223` -> private reverse proxy
+`192.168.31.23` -> `192.168.31.20:8787`.
+This is **historical Kailash-only** evidence, not the active Mood ingress.
 
 That is stronger operational evidence than Kailash Weather's older repository
 README, which described only VPN access. It does **not** independently confirm
@@ -68,7 +69,7 @@ User browser (HTTPS)
     |
     v
 192.168.31.11           existing Nginx Proxy Manager HTTPS reverse proxy
-    |                   new SNI/Host rule mood.biodata.health
+    |                   existing SNI/Host rule mood.biodata.health
     |                   TLS certificate for mood.biodata.health
     v
 192.168.31.20:3001      Mood Tracker backend on srv-prod
@@ -140,17 +141,17 @@ rather than trusting a spoofable `X-Real-IP` from arbitrary clients. This
 conservatively rate-limits the shared proxy IP; high-volume onboarding
 needs an independently reviewed, gateway-bound client-IP policy.
 
-## 3. Request a new host rule on the existing reverse proxy
+## 3. Verify the existing Nginx Proxy Manager Mood host
 
 The Mood reverse proxy is **`192.168.31.11`**, running Nginx Proxy Manager
 (admin UI `http://192.168.31.11:81`). This is distinct from the Kailash
 reverse proxy `192.168.31.23`; do not migrate or edit Kailash as part of Mood.
 
-Send the infrastructure support team the complete, ready-to-use
-[publication request](SUPPORT_REQUEST.md).
+If operator support is needed, use the
+[publication verification request](SUPPORT_REQUEST.md).
 
-The operator has already added a **separate** host/SNI rule while preserving the already
-working Kailash host, with:
+The operator has already added a **separate** Mood host/SNI rule, without
+modifying the independent Kailash route, with:
 
 | Setting | Exact requested value |
 |---|---|
