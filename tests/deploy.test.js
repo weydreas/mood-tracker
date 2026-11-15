@@ -9,8 +9,8 @@ const text = (p) => readFileSync(new URL(p, root), 'utf8');
 test('production guidance matches verified Mood NPM ingress', () => {
   const runbook = text('deploy/README.md');
   assert.match(runbook, /mood\.biodata\.health/);
-  assert.match(runbook, /62\.152\.38\.223/);
-  assert.match(runbook, /192\.168\.31\.23/);
+  assert.match(runbook, /62\.152\.38\.69/);
+  assert.match(runbook, /192\.168\.31\.11/);
   assert.match(runbook, /192\.168\.31\.20:3001/);
   assert.match(runbook, /REG\.RU/);
   assert.doesNotMatch(runbook, /mood\s+CNAME\s+app\.biodata\.health/i);
@@ -36,8 +36,10 @@ test('shared gateway snippet and support request route only the private backend'
   const request = text('deploy/SUPPORT_REQUEST.md');
   const compose = text('compose.yaml');
   assert.match(snippet, /proxy_pass http:\/\/192\.168\.31\.20:3001/);
-  assert.match(request, /62\.152\.38\.223/);
-  assert.match(request, /192\.168\.31\.23/);
+  assert.match(request, /62\.152\.38\.69/);
+  assert.match(request, /192\.168\.31\.11/);
   assert.match(request, /192\.168\.31\.20:3001/);
   assert.match(compose, /MOOD_BIND_IP:-127\.0\.0\.1/);
+  assert.match(compose, /APP_ORIGIN: https:\/\/mood\.biodata\.health/);
+  assert.match(compose, /NODE_ENV: production/);
 });
